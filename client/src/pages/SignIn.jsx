@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  signInStart,
+  signInSuccess,
+  signInFailure,
+} from '../redux/user/userSlice';
+// import OAuth from '../components/OAuth';
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
-
+  const dispatch = useDispatch();
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -15,9 +21,8 @@ export default function SignIn() {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null); // Reset error state on new submission
-    setLoading(true);
     try {
+      dispatch(signInStart());
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: {
@@ -26,18 +31,15 @@ export default function SignIn() {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (!res.ok) { // Check if the response status is not OK (e.g., 400 or 500 errors)
-        throw new Error(data.message || 'An error occurred. Please try again.'); // Use the backend's error message or a default one
-      }
+      console.log(data);
       if (data.success === false) {
-        throw new Error(data.message || 'An error occurred. Please try again.');
+        dispatch(signInFailure(data.message));
+        return;
       }
-      // If everything went fine, navigate to Sign-In page
+      dispatch(signInSuccess(data));
       navigate('/');
     } catch (error) {
-      setError(error.message); // Set the error message to display to the user
-    } finally {
-      setLoading(false); // Ensure loading is set to false at the end of the operation
+      dispatch(signInFailure(error.message));
     }
   };
   return (
@@ -65,10 +67,10 @@ export default function SignIn() {
         >
           {loading ? 'Loading...' : 'Sign In'}
         </button>
-       
+        {/* <OAuth/> */}
       </form>
       <div className='flex gap-2 mt-5'>
-        <p>dont have an account?</p>
+        <p>Dont have an account?</p>
         <Link to={'/Sign-Up'}>
           <span className='text-blue-700'>Sign up</span>
         </Link>
